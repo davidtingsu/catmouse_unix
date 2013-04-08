@@ -166,7 +166,7 @@ function next_step {
 	# Move the cat first
 	#does_cat_see_mouse <cat angle> <cat radius> <mouse angle>
 	#TODO: change to statue radius, is it given since I just invented it?
-	statue_radius=2
+	statue_radius=1 #diameter
 	cat_move_in_dist=1
 	cat_arc_dist=1.25
 	if [ $old_cat_radius -ne $statue_radius ] && [ $(does_cat_see_mouse $old_cat_angle $old_cat_radius $old_mouse_angle) -eq $TRUE ] ; then
@@ -185,9 +185,8 @@ function next_step {
 		local circumference=$(multiply $TWO_PI $cat_radius)
 		local angle_ratio=$(divide $cat_arc_dist $circumference) 
 		local unit_angle_change=$(multiply $angle_ratio $TWO_PI)
-		local angle_change=$(multiply $unit_angle_change ${step})
 
-		local new_cat_angle=$( angle_reduce $( add $old_cat_angle angle_change )  ) 
+		local new_cat_angle=$( angle_reduce $( add $old_cat_angle $unit_angle_change )  ) 
 		if [ $( angle_between old_mouse_angle new_cat_angle new_mouse_angle ) -eq $TRUE ]; then
 			state=${CAUGHT}
 		fi
@@ -205,10 +204,9 @@ function next_step {
 		local circumference=$(multiply $TWO_PI $mouse_radius)
 		local angle_ratio=$(divide $mouse_arc_dist $circumference) 
 		local unit_angle_change=$(multiply $angle_ratio $TWO_PI)
-		local angle_change=$(multiply $unit_angle_change ${step})
 
 
-		local new_mouse_angle=$( angle_reduce  $( add ${old_mouse_angle} $angle_change ) )	
+		local new_mouse_angle=$( angle_reduce  $( add ${old_mouse_angle} $unit_angle_change ) )	
 		# Give up if we're at the last step and haven't caught the mouse
 		if [ ${step} -eq ${max_steps} ] && [ ${state} -ne $CAUGHT ] ; then
 			state=$GIVEUP
@@ -250,11 +248,11 @@ do
 	RESULT=$(next_step $STATE $i $cat_angle $cat_radius $mouse_angle $max_steps)
 	echo $RESULT
 	STATE=$(echo $RESULT| tr -s " " | cut -d" " -f1,1)
-	#step=echo $RESULT| tr -s " " | cut -d" " -f2,2 
-	#cat_angle=echo $RESULT| tr -s " " | cut -d" " -f3,3 #automatically adjusted by number of steps so i commented this out
+	step=$(echo $RESULT| tr -s " " | cut -d" " -f2,2)
+	cat_angle=$(echo $RESULT| tr -s " " | cut -d" " -f3,3) #automatically adjusted by number of steps so i commented this out
 	cat_radius=$(echo $RESULT| tr -s " " | cut -d" " -f4,4)
-	#mouse_angle=echo $RESULT| tr -s " " | cut -d" " -f5,5
-	#max_steps=echo $RESULT| tr -s " " | cut -d" " -f6,6
+	mouse_angle=$(echo $RESULT| tr -s " " | cut -d" " -f5,5)
+	max_steps=$(echo $RESULT| tr -s " " | cut -d" " -f6,6)
 	echo 
 	((i = i + 1))
 done
