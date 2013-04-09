@@ -2,7 +2,12 @@
 
 #use this when on star
 #use regular when on hive
-#alias bc="~cs9e-1/bin/arch/sun4u/bc"
+# This is intended to be an include file 
+# and not executed as a script 
+# dependencies bc 1.06
+if [ -f  ~cs9e-1/bin/arch/sun4u/bc ]; then
+  alias bc="~cs9e-1/bin/arch/sun4u/bc" #expecting bc 1.06
+fi
 
 # bashcalc <expression>
 # This function simply passes in the given expressions to 'bc -l' and

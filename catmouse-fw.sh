@@ -8,6 +8,8 @@
 
 # Source the file containing your calculator functions:
 #. bashcalc-functions.sh
+# http://askubuntu.com/questions/98782/how-to-run-an-alias-in-a-shell-script
+shopt -s expand_aliases 
 . bash-calc.sh
 . assert.sh
 
@@ -233,7 +235,7 @@ fi
 
 # ADD CODE HERE FOR PART 3
 max_steps=$4
-mouse_angle=$2
+mouse_angle=$3
 cat_radius=$2
 cat_angle=$1
 START=1
