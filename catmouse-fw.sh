@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/bash 
+#-x
 # Cat & Mouse Framework
 # CS9E - Assignment 4.2
 #
@@ -9,7 +10,7 @@
 # Source the file containing your calculator functions:
 #. bashcalc-functions.sh
 # http://askubuntu.com/questions/98782/how-to-run-an-alias-in-a-shell-script
-shopt -s expand_aliases 
+shopt -s expand_aliases
 . bash-calc.sh
 . assert.sh
 
@@ -19,6 +20,7 @@ EXIT_SUCCESS=0
 EXIT_FAILURE=1
 TWO_PI=$(echo "8*a(1)" | bc -l)
 PI=$(echo "4*a(1)" | bc -l)
+LOG=$(echo log$(date "+%Y-%m-%d_%H:%M:%S"))
 
 # Additional math functions:
 
@@ -41,21 +43,18 @@ function angle_between {
 	local ca=$( cosine $(subtract $C $A) )
 	local cb=$( cosine $(subtract $C $B) )
 
-	#echo $ba $ca
-	#echo $cb $ca
 	local cmp_one=$(float_gt $ba  $ca ) 
 	local cmp_two=$(float_gt $cb  $ca )
-	#echo $cmp_one $cmp_two
 	
-	if [ $cmp_one -eq $TRUE ] && [ $cmp_two -eq $TRUE ] 
+	if [ $cmp_one -eq $TRUE ] && [ $cmp_two -eq $TRUE ]
 	then
 		#success
 		echo $TRUE 
-		#exit $EXIT_SUCCESS 
+		exit $EXIT_SUCCESS 
 	else
 		#failure
 		echo $FALSE 
-		#exit $EXIT_FAILURE 
+		exit $EXIT_FAILURE 
 	fi
 
 
@@ -108,7 +107,7 @@ function does_cat_see_mouse {
 	local mouse_angle=$3
 	
 
-	local angle=$(subtract $cat_angle  $mouse_angle) 
+	local angle=$(subtract $cat_angle  $mouse_angle)
 	local cosine_angle=$(cosine angle)
 	local prod=$(multiply $cat_radius $cosine_angle)
 	# ADD CODE HERE FOR PART 1
@@ -116,26 +115,29 @@ function does_cat_see_mouse {
 	then 
 		#success
 		echo $TRUE 
-		#exit $EXIT_SUCCESS
+		exit $EXIT_SUCCESS
 	else
 
 		#failure
 		echo $FALSE 
-		#exit $EXIT_FAILURE 
+		exit $EXIT_FAILURE 
 	fi
 }
 # === TEST does_cat_see_mouse === #
 
 #test does 1 0.8 1 
 cond="$(does_cat_see_mouse 1 0.8 1) -eq $FALSE" 
-#assert "$cond" $LINENO
+assert "$cond" $LINENO
 #test does 1 100  1 
 cond="$(does_cat_see_mouse 1 200 1) -eq $TRUE" 
-#assert "$cond" $LINENO
+assert "$cond" $LINENO
+
+cond="$(does_cat_see_mouse 0 1 0) -eq $TRUE" 
+assert "$cond" $LINENO
 
 # === Sanity TEST for assertion ===#
 cond="0 -eq 0"
-#assert "$cond" $LINENO
+assert "$cond" $LINENO
 
 
 # next_step <current state> <current step #> <cat angle> <cat radius> <mouse angle> <max steps>
@@ -147,14 +149,14 @@ cond="0 -eq 0"
 function next_step {
 	local state=$1
 	local -i step=$2
+     #increment step
+    local step=$(add $step 1)
+
 	local old_cat_angle=$3
 	local old_cat_radius=$4
 	local old_mouse_angle=$5
 	local -i max_steps=$6
 
-	local new_cat_angle=${old_cat_angle}
-	local new_cat_radius=${old_cat_radius}
-	local new_mouse_angle=${old_mouse_angle}
 	#NOTE: mouse is at the statue
 
 	# First, make sure we are still running
@@ -163,57 +165,75 @@ function next_step {
 		return ${state}
 	fi
 
-	# ADD CODE HERE FOR PART 2
+
+    #== ALL UPDATES assuming cat is running around circle==#
+    local statue_radius=1 #diameter
+
+    #=== CAT ===#
+    # cat moves an angle of 1.25, when it is at base of statue
+    # cat moves an angle of 1.25, when it is at statue, otherwise it move 1.25/cat_radius meters
+    local cat_move_in_dist=1
+    local cat_arc_dist=1.25
+    local cat_unit_angle_change=$(divide $cat_arc_dist $old_cat_radius)
+    local new_cat_angle=$( angle_reduce $( add $old_cat_angle $cat_unit_angle_change )  )
+    local new_cat_radius=$old_cat_radius
+
+
+
+    #=== MOUSE ===#
+    # mouse always moves an angle  of 1
+
+    local mouse_radius=$statue_radius
+	local mouse_arc_dist=1
+    local mouse_unit_angle_change=$(divide $mouse_arc_dist $mouse_radius)
+    local new_mouse_angle=$( angle_reduce  $(add $old_mouse_angle $mouse_unit_angle_change) )
+
+    #== ADJUSTMENTS assuming cat sees mouse and changes radius ==#
 
 	# Move the cat first
 	#does_cat_see_mouse <cat angle> <cat radius> <mouse angle>
 	#TODO: change to statue radius, is it given since I just invented it?
-	statue_radius=1 #diameter
-	cat_move_in_dist=1
-	cat_arc_dist=1.25
-	if [ $old_cat_radius -ne $statue_radius ] && [ $(does_cat_see_mouse $old_cat_angle $old_cat_radius $old_mouse_angle) -eq $TRUE ] ; then
+    if [ $(float_lte $(subtract $old_cat_radius $statue_radius) 0) -ne $TRUE ] && [ $(does_cat_see_mouse $old_cat_angle $old_cat_radius $old_mouse_angle) -eq $TRUE ] ; then
 		# Move the cat in if it's not at the statue and it can see the mouse
 		#move 1n toward statue
+
+        echo $step cat sees mouse ca:$old_cat_angle, cr:$old_cat_radius, mr:$mouse_radius, ma:$old_mouse_angle >> "$LOG"
 		if [ $(float_gt $(subtract $old_cat_radius $cat_move_in_dist) $statue_radius) -eq $TRUE ]; then
-			new_cat_radius=$( subtract ${new_cat_radius} $cat_move_in_dist )
+			new_cat_radius=$( subtract $old_cat_radius $cat_move_in_dist )
 		else
 			new_cat_radius=$statue_radius
 		fi
+        new_cat_angle=$old_cat_angle
 		
 	else
 		# Move the cat around if it's at the statue or it can't see the mouse
 		# Check if the cat caught the mouse
 		#If the cat can't see the mouse, the cat circles 1.25 meters counterclockwise around the statue.
-		local circumference=$(multiply $TWO_PI $cat_radius)
-		local angle_ratio=$(divide $cat_arc_dist $circumference) 
-		local unit_angle_change=$(multiply $angle_ratio $TWO_PI)
+		if [ $( angle_between $old_cat_angle $new_mouse_angle $new_cat_angle ) -eq $TRUE ]; then
+	        state=${CAUGHT}
 
-		local new_cat_angle=$( angle_reduce $( add $old_cat_angle $unit_angle_change )  ) 
-		if [ $( angle_between old_mouse_angle new_cat_angle new_mouse_angle ) -eq $TRUE ]; then
-			state=${CAUGHT}
-		fi
+            echo $step cat catches mouse ca:$old_cat_angle, cr:$old_cat_radius, mr:$mouse_radius, ma:$old_mouse_angle >> "$LOG"
+        else
+
+            echo $step cat chasing mouse ca:$old_cat_angle, cr:$old_cat_radius, mr:$mouse_radius, ma:$old_mouse_angle >> "$LOG"
+	    fi
+
 	fi
 
 
 	#TODO: change to statue radius, is it given since I just invented it?
-	mouse_radius=$statue_radius 
-	mouse_arc_dist=1
-	# Now move the mouse if it wasn't caught
-	if [ ${state} -ne $CAUGHT ]; then
-		# Move the mouse
+    # Now move the mouse if it wasn't caught
+    if [ ${state} -ne $CAUGHT ]; then
+        # Move the mouse #already moved
 
-		#witless mouse moves one meter counterclockwise around the statue's base
-		local circumference=$(multiply $TWO_PI $mouse_radius)
-		local angle_ratio=$(divide $mouse_arc_dist $circumference) 
-		local unit_angle_change=$(multiply $angle_ratio $TWO_PI)
+        #witless mouse moves one meter counterclockwise around the statue's base
+        # Give up if we're at the last step and haven't caught the mouse
+        if [ ${step} -eq ${max_steps} ] && [ ${state} -ne $CAUGHT ] ; then
+            state=$GIVEUP
 
-
-		local new_mouse_angle=$( angle_reduce  $( add ${old_mouse_angle} $unit_angle_change ) )	
-		# Give up if we're at the last step and haven't caught the mouse
-		if [ ${step} -eq ${max_steps} ] && [ ${state} -ne $CAUGHT ] ; then
-			state=$GIVEUP
-		fi
-	fi
+            echo $step cat gives up ca:$old_cat_angle, cr:$old_cat_radius, mr:$mouse_radius, ma:$old_mouse_angle >> "$LOG"
+        fi
+    fi
 
 	echo ${state} ${step} ${new_cat_angle} ${new_cat_radius} ${new_mouse_angle} ${max_steps}
 	return ${state}
@@ -238,23 +258,43 @@ max_steps=$4
 mouse_angle=$3
 cat_radius=$2
 cat_angle=$1
-START=1
+START=0
 END=$max_steps
 i=$START
 STATE=$RUNNING
+step=$START
 
-while [[ $i -le $END ]]
+echo BEGIN LOG $(date) > "$LOG"
+if [ $END -le $i ]; then
+    echo $step cat gives up:$cat_angle, cr:$cat_radius, mr:1, ma:$mouse_angle >> "$LOG"
+fi
+while [[ $i -lt $END ]]
 do
-	echo step "$i"
 	# next_step <current state> <current step #> <cat angle> <cat radius> <mouse angle> <max steps>
-	RESULT=$(next_step $STATE $i $cat_angle $cat_radius $mouse_angle $max_steps)
+	RESULT=$(next_step $STATE $step $cat_angle $cat_radius $mouse_angle $max_steps)
 	echo $RESULT
+
 	STATE=$(echo $RESULT| tr -s " " | cut -d" " -f1,1)
-	step=$(echo $RESULT| tr -s " " | cut -d" " -f2,2)
+    step=$(echo $RESULT| tr -s " " | cut -d" " -f2,2)
 	cat_angle=$(echo $RESULT| tr -s " " | cut -d" " -f3,3) #automatically adjusted by number of steps so i commented this out
 	cat_radius=$(echo $RESULT| tr -s " " | cut -d" " -f4,4)
 	mouse_angle=$(echo $RESULT| tr -s " " | cut -d" " -f5,5)
 	max_steps=$(echo $RESULT| tr -s " " | cut -d" " -f6,6)
-	echo 
+	echo
 	((i = i + 1))
+
+    if [ $STATE -eq $CAUGHT ]; then
+        echo "Game Over. Mouse was caught!"
+        break
+    fi
+
+    if [ $STATE -ne $CAUGHT ] && [ $step -eq $END ]; then
+        echo "Game Over. Mouse escaped!"
+        break
+    fi
 done
+cat "$LOG"
+echo
+if [ -f "$LOG" ]; then
+    rm "$LOG"
+fi
