@@ -1,5 +1,4 @@
 #!/bin/bash 
-#-x
 # Cat & Mouse Framework
 # CS9E - Assignment 4.2
 #
@@ -43,8 +42,8 @@ function angle_between {
 	local ca=$( cosine $(subtract $C $A) )
 	local cb=$( cosine $(subtract $C $B) )
 
-	local cmp_one=$(float_gt $ba  $ca ) 
-	local cmp_two=$(float_gt $cb  $ca )
+	local cmp_one=$(float_gte $ba  $ca ) 
+	local cmp_two=$(float_gte $cb  $ca )
 	
 	if [ $cmp_one -eq $TRUE ] && [ $cmp_two -eq $TRUE ]
 	then
@@ -73,17 +72,19 @@ function angle_between {
 #1) cos (B-A) > cos (C-A)
 #angle_between  0 $pi_over_3 $pi_over_4 #false
 #angle_between $pi_over_2   $pi_over_2 $pi_over_2 #false
-cond="$(angle_between  $pi_over_4 $pi_over_2 0) -eq $FALSE" 
+cond="$(angle_between  $pi_over_4 $pi_over_2 0) -eq $FALSE"
 assert "$cond" $LINENO
 
 #== fail second cond ===#
 #2) cos (C-B) > cos (C-A)
 #eq not geq
-cond="$(angle_between  0 0 $pi_over_4) -eq $FALSE" 
+cond="$(angle_between  0.1 0 $pi_over_4) -eq $FALSE"
+assert "$cond" $LINENO
+cond="$(angle_between  0 0 $pi_over_4) -eq $TRUE"
 assert "$cond" $LINENO
 
 #== pass both cond ===#
-cond="$(angle_between $pi_over_4   $pi_over_3 $pi_over_2) -eq $TRUE" 
+cond="$(angle_between $pi_over_4   $pi_over_3 $pi_over_2) -eq $TRUE"
 assert "$cond" $LINENO
 
 
@@ -296,5 +297,5 @@ done
 cat "$LOG"
 echo
 if [ -f "$LOG" ]; then
-    rm "$LOG"
+    rm  "$LOG"
 fi

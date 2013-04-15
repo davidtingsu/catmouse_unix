@@ -1,0 +1,9 @@
+#!/bin/bash
+./catmouse-fw.sh 0 1 0.00001 2 #1 step
+echo catches on first step
+echo --------------------
+./catmouse-fw.sh 0 3 2 18 #17 steps, catches on last step
+echo catches on last step
+echo --------------------
+./catmouse-fw.sh 0 3 2 17
+echo "gives up since it can only cat mouse on step > last step"
